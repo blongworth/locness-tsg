@@ -1,0 +1,11 @@
+# Default configuration
+# Copy this template to config.yaml and edit as appropriate
+
+stream:
+    port: COM6
+    baudrate: 9600
+
+file:
+    log: tsg.log
+    data: tsg_data.csv
+    db: tsg.db
