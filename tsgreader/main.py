@@ -46,10 +46,14 @@ def main():
         
         try:
             for line in reader.read_lines():
-                parsed_line = parse_tsg_line(line)
-                print(parsed_line)  # Process each line as it comes in
-                if parsed_line:  # Only write if parsing was successful
-                    writer.writerow(parsed_line)
+                try:
+                    parsed_line = parse_tsg_line(line)
+                    print(parsed_line)  # Process each line as it comes in
+                    if parsed_line:  # Only write if parsing was successful
+                        writer.writerow(parsed_line)
+                except Exception as e:
+                    logger.error(f"Error parsing line: {line}. Error: {str(e)}")
+                    continue
         except KeyboardInterrupt:
             reader.close()
         
