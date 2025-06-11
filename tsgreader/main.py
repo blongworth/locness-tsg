@@ -1,5 +1,5 @@
-from tsgreader import parse_tsg_line
-from tsgreader import SerialReader
+from tsgreader.tsgparser import parse_tsg_line
+from tsgreader.serialreader import SerialReader
 import logging
 import yaml
 import csv
