@@ -1,7 +1,7 @@
 [project]
-name = "locness-tsg"
+name = "tsgreader"
 version = "0.1.0"
-description = "Add your description here"
+description = "TSG (Thermosalinograph) data reader and parser"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -14,3 +14,7 @@ dev = [
     "pytest>=8.4.0",
     "pytest-mock>=3.14.1",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
