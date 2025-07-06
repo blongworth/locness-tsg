@@ -16,6 +16,9 @@ LOGFILE = config["file"]["log"]
 DATAFILE = config["file"]["data"]
 DB_PATH = config["file"]["db"]
 
+# TODO: write to database
+# TODO: calculate salinity
+
 # Configure logging
 logging.basicConfig(
     # filename=LOGFILE,
