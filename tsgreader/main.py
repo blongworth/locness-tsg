@@ -3,6 +3,8 @@ from tsgreader.serialreader import SerialReader
 import logging
 import yaml
 import csv
+import sqlite3
+from datetime import datetime, timezone
 
 
 # Read the configuration file
@@ -14,9 +16,9 @@ TSG_PORT = config["stream"]["port"]
 TSG_BAUD = config["stream"]["baudrate"]
 LOGFILE = config["file"]["log"]
 DATAFILE = config["file"]["data"]
-DB_PATH = config["file"]["db"]
+DB_PATH = config["database"]["db"]
+DB_TABLE = config["database"]["table"]
 
-# TODO: write to database
 # TODO: calculate salinity
 
 # Configure logging
@@ -31,14 +33,56 @@ logging.basicConfig(
 # Start logger
 logger = logging.getLogger(__name__)
 
-def main():
-    logging.basicConfig(level=logging.INFO)
+def write_to_database(parsed_line, db_path, table_name):
+    """Write a single TSG data record to SQLite database."""
+    # Connect to database
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
     
-    # Example usage of SerialReader
-    reader = SerialReader(TSG_PORT, baudrate=TSG_BAUD)
+    # Create table if it doesn't exist
+    cursor.execute(f'''
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            datetime_utc INTEGER NOT NULL,
+            scan_no INTEGER,
+            cond REAL,
+            temp REAL,
+            hull_temp REAL,
+            time_elapsed REAL,
+            nmea_time TEXT,
+            latitude REAL,
+            longitude REAL
+        )
+    ''')
+    conn.commit()
     
-    # Open CSV file and create DictWriter
-    with open(DATAFILE, 'a', newline='') as f:
+    try:
+        # Add current UTC timestamp as Unix timestamp
+        current_utc = int(datetime.now(timezone.utc).timestamp())
+        
+        # Insert data into database
+        cursor.execute(f'''
+            INSERT INTO {table_name} 
+            (datetime_utc, scan_no, cond, temp, hull_temp, time_elapsed, nmea_time, latitude, longitude)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            current_utc,
+            parsed_line.get('scan_no'),
+            parsed_line.get('cond'),
+            parsed_line.get('temp'),
+            parsed_line.get('hull_temp'),
+            parsed_line.get('time_elapsed'),
+            parsed_line.get('nmea_time'),
+            parsed_line.get('latitude'),
+            parsed_line.get('longitude')
+        ))
+        conn.commit()
+    finally:
+        conn.close()
+
+def write_to_csv(parsed_line, datafile):
+    """Write a single TSG data record to CSV file."""
+    with open(datafile, 'a', newline='') as f:
         fieldnames = ['scan_no', 'cond', 'temp', 'hull_temp', 
                      'time_elapsed', 'nmea_time', 'latitude', 'longitude']
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -47,19 +91,50 @@ def main():
         if f.tell() == 0:
             writer.writeheader()
         
-        try:
-            for line in reader.read_lines():
-                try:
-                    parsed_line = parse_tsg_line(line)
-                    print(parsed_line)  # Process each line as it comes in
-                    if parsed_line:  # Only write if parsing was successful
-                        writer.writerow(parsed_line)
-                except Exception as e:
-                    logger.error(f"Error parsing line: {line}. Error: {str(e)}")
-                    continue
-        except KeyboardInterrupt:
-            reader.close()
-        
+        writer.writerow(parsed_line)
+
+def main():
+    
+    # Create SerialReader instance
+    reader = SerialReader(TSG_PORT, baudrate=TSG_BAUD)
+    
+    logger.info("Starting TSG data acquisition...")
+    logger.info(f"Writing to CSV: {DATAFILE}")
+    logger.info(f"Writing to database: {DB_PATH}")
+    
+    try:
+        # Continuously read data and write to both CSV and database
+        for line in reader.read_lines():
+            try:
+                parsed_line = parse_tsg_line(line)
+                
+                if parsed_line:  # Only write if parsing was successful
+                    print(parsed_line)  # Display each record as it comes in
+                    
+                    # Write to CSV
+                    try:
+                        write_to_csv(parsed_line, DATAFILE)
+                    except Exception as e:
+                        logger.error(f"Error writing to CSV: {str(e)}")
+                    
+                    # Write to database
+                    try:
+                        write_to_database(parsed_line, DB_PATH, DB_TABLE)
+                    except Exception as e:
+                        logger.error(f"Error writing to database: {str(e)}")
+                        
+            except Exception as e:
+                logger.error(f"Error parsing line: {line}. Error: {str(e)}")
+                continue
+                
+    except KeyboardInterrupt:
+        logger.info("Received keyboard interrupt, shutting down...")
+    except Exception as e:
+        logger.error(f"Unexpected error in main loop: {str(e)}")
+    finally:
+        reader.close()
+        logger.info("TSG data acquisition stopped.")
+    
 
 if __name__ == "__main__":
     main()
