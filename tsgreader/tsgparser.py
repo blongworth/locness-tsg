@@ -1,4 +1,5 @@
 from datetime import datetime
+import gsw
 
 def parse_tsg_line(line: str) -> dict:
     """
@@ -24,6 +25,7 @@ def parse_tsg_line(line: str) -> dict:
             'cond': float(fields[1]),
             'temp': float(fields[2]),
             'hull_temp': float(fields[3]),
+            'salinity': None,  # Placeholder for salinity
             'time_elapsed': None,
             'nmea_time': None,
             'latitude': None,
@@ -38,7 +40,23 @@ def parse_tsg_line(line: str) -> dict:
                 'longitude': float(fields[7])
             })
             
+        result['salinity'] = conductivity_to_salinity(result['cond'], result['temp'])
+        
         return result
         
     except (ValueError, IndexError) as e:
         raise ValueError(f"Error parsing TSG line: {str(e)}") from e
+
+def conductivity_to_salinity(cond: float, temp: float, pressure: float = 0) -> float:
+    """
+    Convert conductivity to salinity in PSU using the GSW toolkit.
+
+    Args:
+        cond (float): Conductivity in S/m.
+        temp (float): Temperature in degrees Celsius.
+        pressure (float): Pressure in dbar (default is 0).
+
+    Returns:
+        float: Salinity in PSU.
+    """
+    return gsw.conversions.SP_from_C(cond, temp, pressure)

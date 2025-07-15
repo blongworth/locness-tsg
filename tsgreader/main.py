@@ -39,23 +39,6 @@ def write_to_database(parsed_line, db_path, table_name):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
-    # Create table if it doesn't exist
-    cursor.execute(f'''
-        CREATE TABLE IF NOT EXISTS {table_name} (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            datetime_utc INTEGER NOT NULL,
-            scan_no INTEGER,
-            cond REAL,
-            temp REAL,
-            hull_temp REAL,
-            time_elapsed REAL,
-            nmea_time TEXT,
-            latitude REAL,
-            longitude REAL
-        )
-    ''')
-    conn.commit()
-    
     try:
         # Add current UTC timestamp as Unix timestamp
         current_utc = int(datetime.now(timezone.utc).timestamp())
@@ -63,13 +46,14 @@ def write_to_database(parsed_line, db_path, table_name):
         # Insert data into database
         cursor.execute(f'''
             INSERT INTO {table_name} 
-            (datetime_utc, scan_no, cond, temp, hull_temp, time_elapsed, nmea_time, latitude, longitude)
+            (datetime_utc, scan_no, cond, temp, salinity, hull_temp, time_elapsed, nmea_time, latitude, longitude)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             current_utc,
             parsed_line.get('scan_no'),
             parsed_line.get('cond'),
             parsed_line.get('temp'),
+            parsed_line.get('salinity'),
             parsed_line.get('hull_temp'),
             parsed_line.get('time_elapsed'),
             parsed_line.get('nmea_time'),
@@ -83,8 +67,8 @@ def write_to_database(parsed_line, db_path, table_name):
 def write_to_csv(parsed_line, datafile):
     """Write a single TSG data record to CSV file."""
     with open(datafile, 'a', newline='') as f:
-        fieldnames = ['scan_no', 'cond', 'temp', 'hull_temp', 
-                     'time_elapsed', 'nmea_time', 'latitude', 'longitude']
+        fieldnames = ['scan_no', 'cond', 'temp', 'salinity', 'hull_temp',
+                      'time_elapsed', 'nmea_time', 'latitude', 'longitude']
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         
         # Write header if file is empty
