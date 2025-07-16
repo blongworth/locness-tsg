@@ -58,5 +58,10 @@ def conductivity_to_salinity(cond: float, temp: float, pressure: float = 0) -> f
 
     Returns:
         float: Salinity in PSU.
+
+    Raises:
+        ValueError: If cond, temp, or pressure are negative.
     """
+    if cond < 0 or temp < 0 or pressure < 0:
+        raise ValueError("cond, temp, and pressure must be non-negative values.")
     return gsw.conversions.SP_from_C(cond, temp, pressure)
