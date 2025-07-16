@@ -7,5 +7,9 @@ stream:
 
 file:
     log: tsg.log
-    data: tsg_data.csv
+    data: tsg.csv
+
+database:
     db: tsg.db
+    #db: C:/Users/CSL 2/Documents/LOCNESS_data/locness.db
+    table: tsg
