@@ -19,8 +19,6 @@ DATAFILE = config["file"]["data"]
 DB_PATH = config["database"]["db"]
 DB_TABLE = config["database"]["table"]
 
-# TODO: calculate salinity
-
 # Configure logging
 logging.basicConfig(
     # filename=LOGFILE,
@@ -40,16 +38,13 @@ def write_to_database(parsed_line, db_path, table_name):
     cursor = conn.cursor()
     
     try:
-        # Add current UTC timestamp as Unix timestamp
-        current_utc = int(datetime.now(timezone.utc).timestamp())
-        
         # Insert data into database
         cursor.execute(f'''
             INSERT INTO {table_name} 
             (datetime_utc, scan_no, cond, temp, salinity, hull_temp, time_elapsed, nmea_time, latitude, longitude)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
-            current_utc,
+            parsed_line.get('datetime_utc'),
             parsed_line.get('scan_no'),
             parsed_line.get('cond'),
             parsed_line.get('temp'),
@@ -67,7 +62,7 @@ def write_to_database(parsed_line, db_path, table_name):
 def write_to_csv(parsed_line, datafile):
     """Write a single TSG data record to CSV file."""
     with open(datafile, 'a', newline='') as f:
-        fieldnames = ['scan_no', 'cond', 'temp', 'salinity', 'hull_temp',
+        fieldnames = ['datetime_utc', 'scan_no', 'cond', 'temp', 'salinity', 'hull_temp',
                       'time_elapsed', 'nmea_time', 'latitude', 'longitude']
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         

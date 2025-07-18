@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import gsw
 
 def parse_tsg_line(line: str) -> dict:
@@ -20,7 +20,11 @@ def parse_tsg_line(line: str) -> dict:
         if len(fields) not in [4, 8]:
             raise ValueError(f"Expected 4 or 8 fields, got {len(fields)}")
             
+        # Add current UTC timestamp as Unix timestamp
+        current_utc = int(datetime.now(timezone.utc).timestamp())
+
         result = {
+            'datetime_utc': current_utc,
             'scan_no': int(fields[0]),
             'cond': float(fields[1]),
             'temp': float(fields[2]),
