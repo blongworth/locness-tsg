@@ -2,6 +2,7 @@ import random
 import time
 from datetime import datetime, timezone
 import logging
+import yaml
 from tsgreader.tsgparser import conductivity_to_salinity
 from tsgreader.main import write_to_csv, write_to_database
 
@@ -37,13 +38,20 @@ def generate_tsg_data():
     return result
 
 
+
+def load_config(config_path="config.yaml"):
+    with open(config_path, "r") as f:
+        return yaml.safe_load(f)
+
 def main():
 
     # Configuration
+
     frequency = 1  # 1 data point per second
-    file_path = "tsg_fake_data.csv"
-    db_path = "C:/Users/CSL 2/Documents/LOCNESS_data/locness.db"
-    table_name = "tsg"
+    config = load_config()
+    file_path = config["file"]["data"]
+    db_path = config["database"]["db"]
+    table_name = config["database"]["table"]
 
     # Configure logging
     logging.basicConfig(level=logging.INFO)
