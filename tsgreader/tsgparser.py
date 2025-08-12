@@ -55,13 +55,13 @@ def parse_datetime(hms_str: str, dmy_str: str) -> datetime:
 def parse_tsg_line(line: str) -> dict:
     """
     Parse a single line of TSG data in key-value format.
-    
+
     Args:
         line (str): A comma-delimited string containing TSG measurements in key=value format
-        
+
     Returns:
         dict: Parsed TSG data
-        
+
     Example format:
         t1= 25.5397, c1= 0.03668, s=  0.1750, t2= 21.9663, lat=41 31.4341 N, lon=070 40.3335 W, hms=210916, dmy=110825
     """
@@ -69,25 +69,25 @@ def parse_tsg_line(line: str) -> dict:
         # Parse key-value pairs
         pairs = [pair.strip() for pair in line.split(',')]
         data_dict = {}
-        
+
         for pair in pairs:
             if '=' in pair:
                 key, value = pair.split('=', 1)
                 data_dict[key.strip()] = value.strip()
-        
+
         # Validate that we have at least the basic required fields
-        required_fields = ['t1', 'c1', 't2']
+        required_fields = ['t1', 'c1', 't2', 's']
         missing_fields = [field for field in required_fields if field not in data_dict]
         if missing_fields:
             raise ValueError(f"Missing required fields: {missing_fields}")
-        
+
         # Add current UTC timestamp as Unix timestamp
         current_utc = int(datetime.now(timezone.utc).timestamp())
-        
+
         # Parse coordinates
         latitude = parse_coordinate(data_dict.get('lat', ''), 'lat') if 'lat' in data_dict else None
         longitude = parse_coordinate(data_dict.get('lon', ''), 'lon') if 'lon' in data_dict else None
-        
+
         # Parse date/time
         nmea_time = None
         if 'hms' in data_dict and 'dmy' in data_dict:
@@ -99,17 +99,15 @@ def parse_tsg_line(line: str) -> dict:
             'cond': float(data_dict.get('c1', 0)),
             'temp': float(data_dict.get('t1', 0)),
             'hull_temp': float(data_dict.get('t2', 0)),
-            'salinity': None,  # Will be calculated
+            'salinity': float(data_dict.get('s', 0)),
             'time_elapsed': None,  # Not provided in new format
             'nmea_time': nmea_time,
             'latitude': latitude,
             'longitude': longitude
         }
-        
-        result['salinity'] = conductivity_to_salinity(result['cond'], result['temp'])
-        
+
         return result
-        
+
     except (ValueError, IndexError) as e:
         raise ValueError(f"Error parsing TSG line: {str(e)}") from e
 
