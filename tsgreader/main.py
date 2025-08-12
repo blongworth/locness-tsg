@@ -24,7 +24,7 @@ logging.basicConfig(
     # filename=LOGFILE,
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%dT%H:%M:%S%z",
+    datefmt="%Y-%m-%dT%H:%M:%S",
     handlers=[logging.FileHandler(LOGFILE), logging.StreamHandler()],
 )
 
@@ -88,7 +88,11 @@ def main():
                 parsed_line = parse_tsg_line(line)
                 
                 if parsed_line:  # Only write if parsing was successful
-                    print(parsed_line)  # Display each record as it comes in
+                    logger.info(
+                        f"Lab: {parsed_line.get('temp'):.2g}, "
+                        f"Hull: {parsed_line.get('hull_temp'):.2g}, "
+                        f"Sal: {parsed_line.get('salinity'):.2g}"
+                    )
                     
                     # Write to CSV
                     try:
